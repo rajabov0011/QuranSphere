@@ -1,0 +1,293 @@
+﻿@page "/"
+
+@using MudBlazor
+@using QuranSphere.Data
+@using QuranSphere.Services
+@using System.Text.Json
+@inherits LayoutComponentBase
+@inject IQuranSphereService QuranSphereService
+@inject IJSRuntime JSRuntime
+
+<MudThemeProvider/>
+<MudPopoverProvider />
+<MudAppBar Elevation="3" Class="mb-4" Style="background-color: #0d1131; height: 80px; justify-content: center;">
+    <MudSelect T="string" Class="custom-select" Style="max-width: 150px; --mud-palette-text-secondary: rgb(255, 255, 255); 
+                                --mud-palette-text-primary: rgb(255, 255, 255);" 
+        Label="Sura" Variant="Variant.Filled" AdornmentIcon="@Icons.Material.Filled.ArrowDropDown"
+        AdornmentColor="Color.Tertiary" @bind-Value="selectedSurah"
+        SelectedValuesChanged="@(values => OnSelectedSurahChanged(new HashSet<string>(values)))">
+        @if (allSurahs is not null)
+        {
+            @foreach (var surah in allSurahs)
+            {
+                <MudSelectItem Value="@surah.EnglishName">@surah.EnglishName</MudSelectItem>
+            }
+        }
+    </MudSelect>
+    <MudSelect T="string" Class="custom-select" Style="max-width: 100px; --mud-palette-text-secondary: rgb(255, 255, 255); --mud-palette-text-primary: rgb(255, 255, 255);" Label="Oyat" Variant="Variant.Filled" AdornmentIcon="@Icons.Material.Filled.ArrowDropDown"
+        AdornmentColor="Color.Tertiary" @bind-Value="selectedAyah"
+        SelectedValuesChanged="@(values => OnAyahSelected(values.FirstOrDefault()))">
+        @if (countOfAyahsOfSurah > 0)
+        {
+            @foreach (var ayah in Enumerable.Range(1, countOfAyahsOfSurah))
+            {
+                <MudSelectItem Value="@ayah.ToString()">@ayah</MudSelectItem>
+            }
+        }
+    </MudSelect>
+    <MudSpacer />
+    <MudIconButton @onclick="OnTranslateIconClicked">
+        <MudIcon Size="Size.Large" Color="Color.Warning" Icon="@Icons.Material.Filled.Translate"
+            Style="display: flex; align-items: center; height: 100%;"/>
+    </MudIconButton>
+</MudAppBar>
+<MudContainer Class="mt-20">
+    <MudSpacer />
+    <MudSpacer />
+    <MudCard Class="mt-4" Elevation="0" Outlined="false" Style="@GetStyleAyahPng()">
+        @if (isLoadingImage)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+        }
+        else if (ayahPngUrl != null)
+        {
+            <img src="@ayahPngUrl" style="max-width:100%;" />
+        }
+    </MudCard>
+    @if (isShowTranslation)
+    {
+        <MudPaper Class="mt-4" Elevation="0" Outlined="false" Style="background: none; box-shadow: none;">
+            <MudText Typo="Typo.body1" Align="Align.Center" Color="Color.Success">@ayahTranlation?.Text</MudText>
+        </MudPaper>
+    }
+    <audio @ref="audioPlayer" src="@ayahMp3Url" preload="auto" />
+    @Body
+</MudContainer>
+<MudAppBar Bottom="true" Fixed="true" Color="Color.Warning" Elevation="1" 
+    Style="height: 80px; justify-content: center;">
+    @if (isPlay)
+    {
+        <MudIconButton Size="Size.Large" Icon="@Icons.Material.Filled.Pause" Color="Color.Inherit" Edge="Edge.Start"
+            @onclick="OnPlayIconClicked" />
+    }
+    else
+    {
+        <MudIconButton Size="Size.Large" Icon="@Icons.Material.Filled.PlayArrow" Color="Color.Inherit" Edge="Edge.Start"
+            @onclick="OnPlayIconClicked" />
+    }
+    <MudSpacer />
+    <MudIconButton @onclick="OnStateIconClicked" Color="Color.Inherit">
+        <MudIcon Size="Size.Large"  Icon="@(stateIcon switch  
+            {  
+                StateIcon.Repeat => Icons.Material.Filled.RepeatOne,   
+                StateIcon.Default => Icons.Material.Filled.Repeat,  
+                StateIcon.AutoNext => Icons.Material.Filled.SkipNext,  
+                _ => Icons.Material.Filled.Repeat  
+            })" />
+    </MudIconButton>
+</MudAppBar>
+
+<style>
+    @@media (max-width: 600px) {
+        .custom-select {
+            max-width: 200px;
+            margin: 2px;
+            height: 50px;
+            border-radius: 25px;
+        }
+    }
+</style>
+
+@code
+{
+    private List<Surah>? allSurahs;
+    private AyahTranslationData? ayahTranlation;
+    private string? selectedSurah;
+    private int countOfAyahsOfSurah;
+    private int selectedSurahNumber;
+    private string? selectedAyah;
+    private int selectedAyahNumber;
+    private string? ayahPngUrl;
+    private string? ayahMp3Url;
+    private bool isShowTranslation = false;
+    private bool isPlay = false;
+    private bool isLoadingImage = false;
+    private ElementReference audioPlayer;
+    public enum StateIcon
+    {
+        Default,
+        Repeat,
+        AutoNext,
+    }
+    private StateIcon stateIcon = StateIcon.Default;
+    private async void OnStateIconClicked()
+    {
+        stateIcon = stateIcon switch
+        {
+            StateIcon.Default => StateIcon.Repeat,
+            StateIcon.Repeat => StateIcon.AutoNext,
+            StateIcon.AutoNext => StateIcon.Default,
+            _ => StateIcon.Default
+        };
+
+        if (stateIcon == StateIcon.Repeat)
+        {
+            await JSRuntime.InvokeVoidAsync("audioPlayer.enableRepeat", audioPlayer);
+            await JSRuntime.InvokeVoidAsync("audioPlayer.play", audioPlayer);
+        }
+        else if (stateIcon == StateIcon.AutoNext)
+        {
+            await JSRuntime.InvokeVoidAsync("audioPlayer.enableAutoNext", audioPlayer, DotNetObjectReference.Create(this));
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("audioPlayer.disableRepeat", audioPlayer);
+            await JSRuntime.InvokeVoidAsync("audioPlayer.disableAutoNext", audioPlayer);
+        }
+
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("audioPlayer.setupAudioEndedHandler", audioPlayer, DotNetObjectReference.Create(this));
+        }
+    }
+
+    private async void OnPlayIconClicked()
+    {
+        isPlay = !isPlay;
+    
+        if (isPlay)
+        {
+            await JSRuntime.InvokeVoidAsync("audioPlayer.play", audioPlayer);
+            
+            if (stateIcon == StateIcon.Repeat)
+            {
+                await JSRuntime.InvokeVoidAsync("audioPlayer.enableRepeat", audioPlayer);
+            }
+            else if (stateIcon == StateIcon.AutoNext)
+            {
+                await JSRuntime.InvokeVoidAsync("audioPlayer.enableAutoNext", audioPlayer, DotNetObjectReference.Create(this));
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("audioPlayer.pause", audioPlayer);
+            
+            if (stateIcon == StateIcon.Repeat)
+            {
+                await JSRuntime.InvokeVoidAsync("audioPlayer.disableRepeat", audioPlayer);
+            }
+            else if (stateIcon == StateIcon.AutoNext)
+            {
+                await JSRuntime.InvokeVoidAsync("audioPlayer.disableAutoNext", audioPlayer);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnNextAyahAutoPlay()
+    {
+        if (selectedAyahNumber < countOfAyahsOfSurah)
+        {
+            selectedAyahNumber++;
+            selectedAyah = selectedAyahNumber.ToString();
+            await OnAyahSelected(selectedAyah);
+        }
+        else
+        {
+            selectedAyahNumber = 1;
+            selectedAyah = selectedAyahNumber.ToString();
+            await OnAyahSelected(selectedAyah);
+        }
+
+        isPlay = true;
+        await JSRuntime.InvokeVoidAsync("audioPlayer.play", audioPlayer);
+    }
+
+    [JSInvokable("OnAudioEnded")]
+    public async Task OnAudioEnded()
+    {
+        if (stateIcon == StateIcon.Repeat)
+        {
+            await JSRuntime.InvokeVoidAsync("audioPlayer.play", audioPlayer);
+        }
+        else if (stateIcon == StateIcon.AutoNext)
+        {
+            await OnNextAyahAutoPlay();
+        }
+        else
+        {
+            isPlay = false;
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnTranslateIconClicked()
+    {
+        isShowTranslation = !isShowTranslation;
+    }
+
+    private async void OnSelectedSurahChanged(HashSet<string> selectedValues)
+    {
+        selectedSurah = selectedValues.FirstOrDefault();
+        
+        var surah = allSurahs?.FirstOrDefault(s => s.EnglishName == selectedSurah);
+        
+        countOfAyahsOfSurah = surah?.NumberOfAyahs ?? 0;
+        selectedSurahNumber = surah?.Number ?? 0;
+        selectedAyah = null;
+        ayahPngUrl = null;
+        ayahTranlation = null;
+        isShowTranslation = false;
+
+        isPlay = false;
+        await JSRuntime.InvokeVoidAsync("audioPlayer.pause", audioPlayer);
+
+        ayahMp3Url = null;
+
+        StateHasChanged();
+    }
+
+    private async Task OnAyahSelected(string? ayah)
+    {
+        isLoadingImage = true;
+        selectedAyah = ayah;
+        selectedAyahNumber = Convert.ToInt32(selectedAyah);
+        ayahPngUrl = null;
+        ayahTranlation = null;
+        isShowTranslation = false;
+
+        if (selectedSurahNumber > 0 && int.TryParse(selectedAyah, out var ayahNumber))
+        {
+            ayahPngUrl = await QuranSphereService.GetAyahPng(selectedSurahNumber, selectedAyahNumber);
+            isLoadingImage = false;
+            StateHasChanged();
+            ayahTranlation = await QuranSphereService.GetAyahTranlationAsync(selectedSurahNumber, selectedAyahNumber);
+            isPlay = false;
+            await JSRuntime.InvokeVoidAsync("audioPlayer.pause", audioPlayer);
+            ayahMp3Url = await QuranSphereService.GetAyahAudio(selectedSurahNumber, selectedAyahNumber);
+            await JSRuntime.InvokeVoidAsync("setupAudioEndedHandler", audioPlayer, DotNetObjectReference.Create(this));
+        }
+        StateHasChanged();
+    }
+
+    private string? GetStyleAyahPng()
+    {
+        return ayahPngUrl != null 
+            ? "background: none; box-shadow: none; display: flex; justify-content: flex-end; align-items: center; height: 100%;" 
+            : "background: none; box-shadow: none; display: flex; justify-content: center; align-items: center; height: 100%;";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        allSurahs = await QuranSphereService.GetAllSurahs();
+        await JSRuntime.InvokeVoidAsync("audioPlayer.setupAudioEndedHandler", audioPlayer, DotNetObjectReference.Create(this));
+        StateHasChanged();
+    }
+}
