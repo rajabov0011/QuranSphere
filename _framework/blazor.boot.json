@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "QuranSphere",
   "resources": {
-    "hash": "sha256-geDXkF9aaOCYwxL4UOLh6MaTjLfgxuH61f5e5W8R1XQ=",
+    "hash": "sha256-G5qDMu55nG14qF9wWDTqJAe27oUfYsvUSDORbzZ3QLE=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Components.Forms.aqnxj8lz9n.wasm": "Microsoft.AspNetCore.Components.Forms.wasm",
       "Microsoft.AspNetCore.Components.6cpea0ck64.wasm": "Microsoft.AspNetCore.Components.wasm",
@@ -21,7 +21,7 @@
       "Microsoft.JSInterop.vbgjtaistr.wasm": "Microsoft.JSInterop.wasm",
       "Microsoft.JSInterop.WebAssembly.heoad7mujs.wasm": "Microsoft.JSInterop.WebAssembly.wasm",
       "MudBlazor.kz0pu93bq8.wasm": "MudBlazor.wasm",
-      "QuranSphere.q8meah3q9t.wasm": "QuranSphere.wasm",
+      "QuranSphere.z4pleapf3l.wasm": "QuranSphere.wasm",
       "System.Collections.Concurrent.u7gsdlu87c.wasm": "System.Collections.Concurrent.wasm",
       "System.Collections.Immutable.f1ce80ns32.wasm": "System.Collections.Immutable.wasm",
       "System.Collections.siwpla7rtm.wasm": "System.Collections.wasm",
@@ -89,7 +89,7 @@
       "Microsoft.JSInterop.vbgjtaistr.wasm": "sha256-a55WYCaycB8aUpAsLC/Amip8LqEGJGwHC3Pjb3544lc=",
       "Microsoft.JSInterop.WebAssembly.heoad7mujs.wasm": "sha256-99wG3VH14sWkwPaF5rX6YAcJvtAhDuqonwihvj2m5HA=",
       "MudBlazor.kz0pu93bq8.wasm": "sha256-wJy5v0jBLTHO5znJSDwTQGGe0H2xXNHeWhY/zgLfulM=",
-      "QuranSphere.q8meah3q9t.wasm": "sha256-5rnDyGgs/xLH6mlxy46IDELNFyGMg38Uucrh2LEd4uw=",
+      "QuranSphere.z4pleapf3l.wasm": "sha256-fQc6oH8lLt/ULFMBFiVjSmxhgv6OyyIUThQI/Q2oxQs=",
       "System.Collections.Concurrent.u7gsdlu87c.wasm": "sha256-GsKNi0B5lHsrflH6fzNCU11mj0+KgA9GLy719SGkpkc=",
       "System.Collections.Immutable.f1ce80ns32.wasm": "sha256-jVMElT4Dv5+ODKXbya+BHVwXNU0K+AE4iPSNYvfLEXc=",
       "System.Collections.siwpla7rtm.wasm": "sha256-HMIZv6ORX9ma+A5JyuREcMfFUxtVDSp+lV/LfnF90IQ=",
