@@ -1,0 +1,41 @@
+name: Build and Deploy Blazor WASM to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore ./QuranSphere/QuranSphere.csproj
+
+    - name: Build
+      run: dotnet build --configuration Release ./QuranSphere/QuranSphere.csproj
+
+    - name: Publish
+      run: dotnet publish --configuration Release --output ./publish ./QuranSphere/QuranSphere.csproj
+
+    - name: Update base href in index.html
+      run: |
+        sed -i 's|<base href="/" />|<base href="/QuranSphere/" />|' ./publish/wwwroot/index.html
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./publish/wwwroot
+        target_branch: gh-pages
